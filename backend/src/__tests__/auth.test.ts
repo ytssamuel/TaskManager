@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { extractToken, hashPassword, comparePassword } from "@/utils/auth";
 
 describe("Auth Utilities", () => {
   const JWT_SECRET = "test-secret-key-for-testing";
@@ -160,17 +161,11 @@ describe("Helper Functions", () => {
   });
 
   it("should return null for missing Bearer header", () => {
-    const authHeader = undefined;
-    const noAuth = "Basic abc123";
+    // Test the extractToken function directly with various inputs
+    const result1 = extractToken(undefined);
+    const result2 = extractToken("Basic abc123");
 
-    const extractFromUndefined = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-    const extractFromBasic = noAuth.startsWith("Bearer ")
-      ? noAuth.slice(7)
-      : null;
-
-    expect(extractFromUndefined).toBeNull();
-    expect(extractFromBasic).toBeNull();
+    expect(result1).toBeNull();
+    expect(result2).toBeNull();
   });
 });

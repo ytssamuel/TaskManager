@@ -21,6 +21,11 @@ model User {
   ownedProjects   Project[]       @relation("ProjectOwner")
   assignedTasks   Task[]          @relation("Assignee")
   createdTasks    Task[]          @relation("Creator")
+  assignedToTasks Task[]          @relation("TaskAssignees")
+  apiKeys         ApiKey[]
+  activities      Activity[]
+  createdInvites  ProjectInvite[] @relation("InviteCreator")
+  comments        TaskComment[]
 
   @@map("users")
 }
@@ -38,6 +43,9 @@ model Project {
   members  ProjectMember[]
   tasks    Task[]
   columns  Column[]
+  activities Activity[]
+  invites  ProjectInvite[]
+  apiKeys  ApiKey[]
 
   @@map("projects")
 }
@@ -57,10 +65,40 @@ model ProjectMember {
   @@map("project_members")
 }
 
+model ProjectInvite {
+  id        String   @id @default(uuid())
+  email     String
+  role      MemberRole @default(MEMBER)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  acceptedAt DateTime?
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation("InviteCreator", fields: [createdById], references: [id])
+
+  @@map("project_invites")
+}
+
 enum Role {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum ApiKeyRole {
+  READ_ONLY
+  MEMBER
+  ADMIN
+  OWNER
 }
 
 model Task {
@@ -86,6 +124,9 @@ model Task {
 
   dependentOn TaskDependency[] @relation("DependentTask")
   dependencies TaskDependency[] @relation("DependsOnTask")
+  activities Activity[]
+  assignees   User[]   @relation("TaskAssignees")
+  comments    TaskComment[]
 
   @@map("tasks")
 }
@@ -128,4 +169,53 @@ model Column {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("columns")
+}
+
+model ApiKey {
+  id        String      @id @default(uuid())
+  name      String
+  key       String      @unique
+  role      ApiKeyRole  @default(MEMBER)
+  createdAt DateTime   @default(now())
+  lastUsedAt DateTime?
+  expiresAt DateTime?
+  projectId String?    // 可選：限定只能訪問特定專案
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("task_comments")
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  taskId String?
+  task   Task?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
 }

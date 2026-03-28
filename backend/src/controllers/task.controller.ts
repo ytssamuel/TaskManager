@@ -1,3 +1,6 @@
+// Permission helper
+const isAdmin = (role?: string) => role === "ADMIN" || role === "OWNER";
+
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import prisma from "@/utils/prisma";
@@ -197,8 +200,6 @@ export const getTask = async (req: AuthRequest, res: Response, next: NextFunctio
         dependentOn: {
           select: {
             id: true,
-            title: true,
-            status: true,
           },
         },
       },
@@ -233,6 +234,12 @@ export const createTask = async (req: AuthRequest, res: Response, next: NextFunc
 
     if (!membership) {
       res.status(403).json(errorResponse("PERMISSION_ERROR", "無權限在該專案新增任務"));
+      return;
+    }
+
+    // MEMBER can only create tasks in BACKLOG
+    if (!isAdmin(req.user.role) && membership.role === "MEMBER" && data.status !== "BACKLOG") {
+      res.status(403).json(errorResponse("PERMISSION_ERROR", "成員只能新增任務至「待整理」"));
       return;
     }
 
@@ -301,6 +308,7 @@ export const updateTask = async (req: AuthRequest, res: Response, next: NextFunc
       return;
     }
 
+    // Check if user is admin in this project
     const membership = await prisma.projectMember.findFirst({
       where: {
         projectId: task.projectId,
@@ -310,6 +318,12 @@ export const updateTask = async (req: AuthRequest, res: Response, next: NextFunc
 
     if (!membership) {
       res.status(403).json(errorResponse("PERMISSION_ERROR", "無權限"));
+      return;
+    }
+
+    // MEMBER cannot edit tasks
+    if (!isAdmin(req.user.role) && membership.role === "MEMBER") {
+      res.status(403).json(errorResponse("PERMISSION_ERROR", "成員無法編輯任務"));
       return;
     }
 
@@ -375,6 +389,12 @@ export const deleteTask = async (req: AuthRequest, res: Response, next: NextFunc
       return;
     }
 
+    // MEMBER cannot delete tasks
+    if (!isAdmin(req.user.role) && membership.role === "MEMBER") {
+      res.status(403).json(errorResponse("PERMISSION_ERROR", "成員無法刪除任務"));
+      return;
+    }
+
     await prisma.task.delete({ where: { id } });
 
     res.json(successResponse({ message: "任務已刪除" }));
@@ -423,6 +443,20 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response, next: Ne
     if (!membership) {
       res.status(403).json(errorResponse("PERMISSION_ERROR", "無權限"));
       return;
+    }
+
+    // MEMBER permission checks for status changes
+    if (!isAdmin(req.user.role) && membership.role === "MEMBER") {
+      // Cannot move to READY (from BACKLOG)
+      if (task.status === "BACKLOG" && data.status === "READY") {
+        res.status(403).json(errorResponse("PERMISSION_ERROR", "成員無法將任務移至「準備開始」"));
+        return;
+      }
+      // Cannot move to DONE (only ADMIN can complete)
+      if (data.status === "DONE") {
+        res.status(403).json(errorResponse("PERMISSION_ERROR", "成員無法將任務標記為「已完成」"));
+        return;
+      }
     }
 
     if (task.status !== data.status) {
@@ -650,6 +684,110 @@ export const removeDependency = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+// GET /tasks/search?q=keyword - 搜尋任務（網頁版）
+export const searchTasks = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
+      return;
+    }
+
+    const { q, projectId, status, priority, assigneeId, limit = "50" } = req.query;
+
+    if (!q || typeof q !== "string" || q.trim().length === 0) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "搜尋關鍵字不能為空"));
+      return;
+    }
+
+    const searchQuery = q.trim();
+    const limitNum = Math.min(parseInt(limit as string, 10) || 50, 200);
+
+    // 構建 Prisma where 條件
+    const whereConditions: any[] = [];
+
+    // 文字搜尋
+    whereConditions.push({
+      OR: [
+        { title: { contains: searchQuery, mode: "insensitive" } },
+        { description: { contains: searchQuery, mode: "insensitive" } },
+      ],
+    });
+
+    // 專案過濾
+    if (projectId && typeof projectId === "string") {
+      // 確認使用者有權限訪問該專案
+      const membership = await prisma.projectMember.findFirst({
+        where: { projectId, userId: req.user.userId },
+      });
+      if (!membership) {
+        res.json(successResponse({ query: searchQuery, count: 0, results: [] }));
+        return;
+      }
+      whereConditions.push({ projectId });
+    } else {
+      // 跨專案搜尋：只搜使用者有權限的專案
+      const memberships = await prisma.projectMember.findMany({
+        where: { userId: req.user.userId },
+        select: { projectId: true },
+      });
+      const projectIds = memberships.map((m) => m.projectId);
+      whereConditions.push({ projectId: { in: projectIds } });
+    }
+
+    // 狀態過濾
+    if (status && typeof status === "string") {
+      const statuses = status.split(",") as any[];
+      whereConditions.push({ status: { in: statuses } });
+    }
+
+    // 優先度過濾
+    if (priority && typeof priority === "string") {
+      const priorities = priority.split(",") as any[];
+      whereConditions.push({ priority: { in: priorities } });
+    }
+
+    // 負責人過濾
+    if (assigneeId && typeof assigneeId === "string") {
+      whereConditions.push({ assigneeId });
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { AND: whereConditions },
+      include: {
+        assignee: { select: { id: true, name: true, avatarUrl: true } },
+        createdBy: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true } },
+      },
+      orderBy: [
+        { priority: "desc" },
+        { updatedAt: "desc" },
+      ],
+      take: limitNum,
+    });
+
+    // 關鍵字高亮
+    const highlightText = (text: string | null, query: string): string => {
+      if (!text) return "";
+      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return text.replace(new RegExp(`(${escaped})`, "gi"), "**$1**");
+    };
+
+    const results = tasks.map((task) => ({
+      ...task,
+      titleHighlight: highlightText(task.title, searchQuery),
+      descriptionHighlight: task.description ? highlightText(task.description, searchQuery) : null,
+    }));
+
+    res.json(successResponse({
+      query: searchQuery,
+      count: results.length,
+      results,
+    }));
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getProjectTasks,
   getTask,
@@ -660,4 +798,5 @@ export default {
   reorderTask,
   addDependency,
   removeDependency,
+  searchTasks,
 };

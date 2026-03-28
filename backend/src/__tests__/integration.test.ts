@@ -2,17 +2,35 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import express, { Request, Response } from "express";
 
 const JWT_SECRET = "test-secret-key-for-testing";
 
+interface TestUser {
+  id: string;
+  email: string;
+  name: string;
+  password: string;
+  createdAt: string;
+}
+
+interface TestProject {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  createdAt: string;
+  tasks: unknown[];
+}
+
 function createTestApp() {
-  const app = require("express")();
-  app.use(require("express").json());
+  const app = express();
+  app.use(express.json());
 
-  const users: any[] = [];
-  const projects: any[] = [];
+  const users: TestUser[] = [];
+  const projects: TestProject[] = [];
 
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
     const { email, password, name } = req.body;
 
     if (users.find((u) => u.email === email)) {
@@ -23,7 +41,7 @@ function createTestApp() {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = {
+    const user: TestUser = {
       id: `user-${Date.now()}`,
       email,
       name: name || email.split("@")[0],
@@ -45,7 +63,7 @@ function createTestApp() {
     });
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const user = users.find((u) => u.email === email);
@@ -77,7 +95,7 @@ function createTestApp() {
     });
   });
 
-  app.get("/api/auth/me", (req, res) => {
+  app.get("/api/auth/me", (req: Request, res: Response) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -111,7 +129,7 @@ function createTestApp() {
     }
   });
 
-  app.get("/api/projects", (req, res) => {
+  app.get("/api/projects", (req: Request, res: Response) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({
@@ -123,7 +141,7 @@ function createTestApp() {
     res.json({ success: true, data: projects });
   });
 
-  app.post("/api/projects", (req, res) => {
+  app.post("/api/projects", (req: Request, res: Response) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -131,6 +149,17 @@ function createTestApp() {
       return res.status(401).json({
         success: false,
         error: { code: "AUTH_ERROR", message: "未登入" },
+      });
+    }
+
+    let userId: string;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      userId = decoded.userId;
+    } catch {
+      return res.status(401).json({
+        success: false,
+        error: { code: "AUTH_ERROR", message: "無效或已過期的 token" },
       });
     }
 
@@ -142,10 +171,11 @@ function createTestApp() {
       });
     }
 
-    const project = {
+    const project: TestProject = {
       id: `project-${Date.now()}`,
       name: name.trim(),
       description: description || "",
+      ownerId: userId,
       tasks: [],
       createdAt: new Date().toISOString(),
     };

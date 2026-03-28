@@ -15,9 +15,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { InviteModal } from "@/components/InviteModal";
+import { TaskAssignees } from "@/components/TaskAssignees";
+import { TaskComments } from "@/components/TaskComments";
 import { getPriorityColor, getPriorityLabel, getStatusLabel } from "@/lib/utils";
 import { taskSchema, type TaskInput } from "@/lib/validations";
-import { ArrowLeft, Plus, Lock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Lock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Trash2, Pencil, List, Layout } from "lucide-react";
 import type { Task, Column } from "@/lib/types";
 
 interface ColumnWithStatus extends Column {
@@ -65,10 +68,17 @@ export function ProjectBoard() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [expandedColumns, setExpandedColumns] = useState<string[]>(["BACKLOG", "IN_PROGRESS"]);
+  const [editViewMode, setEditViewMode] = useState<"stacked" | "tabs">("stacked");
 
   const createForm = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
     defaultValues: { status: "BACKLOG", priority: "MEDIUM" },
+  });
+
+  // Project edit form
+  const [projectEditOpen, setProjectEditOpen] = useState(false);
+  const projectEditForm = useForm<{ name: string; description: string }>({
+    defaultValues: { name: "", description: "" },
   });
 
   const editForm = useForm<TaskInput>({
@@ -95,7 +105,7 @@ export function ProjectBoard() {
       setTasks(taskData.tasks);
     } catch (error: any) {
       toast({ title: "載入失敗", description: error.message, variant: "destructive" });
-      navigate("/projects");
+      navigate("/");
     } finally {
       setLoading(false);
     }
@@ -122,6 +132,28 @@ export function ProjectBoard() {
       toast({ title: "任務更新成功" });
       setEditDialogOpen(false);
       setSelectedTask(null);
+    } catch (error: any) {
+      toast({ title: "更新失敗", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const openProjectEdit = () => {
+    if (currentProject) {
+      projectEditForm.reset({
+        name: currentProject.name,
+        description: currentProject.description || "",
+      });
+      setProjectEditOpen(true);
+    }
+  };
+
+  const onProjectEditSubmit = async (data: { name: string; description: string }) => {
+    if (!currentProject) return;
+    try {
+      const updated = await projectService.updateProject(currentProject.id, data);
+      setCurrentProject(updated);
+      toast({ title: "專案更新成功" });
+      setProjectEditOpen(false);
     } catch (error: any) {
       toast({ title: "更新失敗", description: error.message, variant: "destructive" });
     }
@@ -207,8 +239,19 @@ export function ProjectBoard() {
         {task.description && (
           <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
         )}
-        <div className="flex items-center justify-between mt-2">
-          <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</Badge>
+        <div className="flex items-center justify-between mt-2 gap-2">
+          <div className="flex items-center gap-2">
+            <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</Badge>
+            {/* 顯示任務負責人 */}
+            {currentProject?.members && (
+              <TaskAssignees
+                taskId={task.id}
+                projectMembers={currentProject.members.map(m => ({ ...m.user, avatarUrl: m.user.avatarUrl || null }))}
+                assignees={[]}
+                onChange={() => {}}
+              />
+            )}
+          </div>
           <div className={`flex items-center gap-0.5 ${isMobile ? "flex-col" : "flex-row"}`}>
             <Button
               variant="ghost"
@@ -247,18 +290,26 @@ export function ProjectBoard() {
       {/* 頂部標題列 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0 pb-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/projects")} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold truncate">{currentProject?.name}</h1>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">{currentProject?.name}</h1>
+              <Button variant="ghost" size="icon" onClick={openProjectEdit} className="h-8 w-8">
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
             <p className="text-muted-foreground text-sm truncate">{currentProject?.description || "無描述"}</p>
           </div>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          新建任務
-        </Button>
+        <div className="flex gap-2">
+          {id && <InviteModal projectId={id} />}
+          <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            新建任務
+          </Button>
+        </div>
       </div>
 
       {/* 建立任務對話框 */}
@@ -310,7 +361,7 @@ export function ProjectBoard() {
         setEditDialogOpen(open);
         if (!open) setSelectedTask(null);
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
             <DialogHeader>
               <DialogTitle>編輯任務</DialogTitle>
@@ -358,6 +409,64 @@ export function ProjectBoard() {
                 </div>
               </div>
             </div>
+
+            {/* 描述與留言切換 / View Mode Toggle */}
+            {selectedTask && (
+              <div className="border-t pt-4 mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={editViewMode === "stacked" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditViewMode("stacked")}
+                    className="h-8"
+                  >
+                    <Layout className="h-4 w-4 mr-1" />
+                    疊加
+                  </Button>
+                  <Button
+                    variant={editViewMode === "tabs" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditViewMode("tabs")}
+                    className="h-8"
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    分頁
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* 內容區域 - 根據 view mode 顯示 */}
+            {selectedTask && (
+              <div className="mt-4">
+                {/* 疊加模式 (預設) */}
+                {editViewMode === "stacked" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>描述</Label>
+                      <Textarea {...editForm.register("description")} placeholder="任務描述..." className="min-h-[80px]" />
+                    </div>
+                    <div className="border-t pt-4">
+                      <TaskComments taskId={selectedTask.id} />
+                    </div>
+                  </div>
+                )}
+
+                {/* 分頁模式 */}
+                {editViewMode === "tabs" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>描述</Label>
+                      <Textarea {...editForm.register("description")} placeholder="任務描述..." className="min-h-[120px]" />
+                    </div>
+                    <div className="border-t pt-4">
+                      <TaskComments taskId={selectedTask.id} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2">
               <Button type="button" variant="destructive" onClick={() => selectedTask && handleDeleteTask(selectedTask.id)} className="w-full sm:w-auto">
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -369,6 +478,31 @@ export function ProjectBoard() {
                   {editForm.formState.isSubmitting ? "儲存中..." : "儲存"}
                 </Button>
               </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 專案編輯對話框 */}
+      <Dialog open={projectEditOpen} onOpenChange={setProjectEditOpen}>
+        <DialogContent>
+          <form onSubmit={projectEditForm.handleSubmit(onProjectEditSubmit)}>
+            <DialogHeader>
+              <DialogTitle>編輯專案</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>專案名稱</Label>
+                <Input {...projectEditForm.register("name")} placeholder="輸入專案名稱" />
+              </div>
+              <div className="space-y-2">
+                <Label>描述</Label>
+                <Textarea {...projectEditForm.register("description")} placeholder="輸入專案描述" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setProjectEditOpen(false)}>取消</Button>
+              <Button type="submit">儲存</Button>
             </DialogFooter>
           </form>
         </DialogContent>

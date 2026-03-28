@@ -4,9 +4,10 @@ import { Layout } from "@/components/layout/Layout";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { Dashboard } from "@/pages/Dashboard";
-import { ProjectList } from "@/pages/ProjectList";
 import { ProjectBoard } from "@/pages/ProjectBoard";
 import { Profile } from "@/pages/Profile";
+import { Help } from "@/pages/Help";
+import { InvitePage } from "@/pages/Invite";
 import { ApiTest } from "@/pages/ApiTest";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -23,9 +24,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
-          <Route path="projects" element={<ProjectList />} />
           <Route path="projects/:id" element={<ProjectBoard />} />
           <Route path="settings" element={<Profile />} />
+          <Route path="help" element={<Help />} />
+          <Route path="join/:token" element={<InvitePage />} />
         </Route>
         <Route path="/api-test" element={<ApiTest />} />
       </Routes>

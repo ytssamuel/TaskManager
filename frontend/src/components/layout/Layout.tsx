@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getInitials } from "@/lib/utils";
-import { LayoutDashboard, FolderKanban, Settings, LogOut, Terminal, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Terminal, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
 export function Layout() {
@@ -21,7 +21,7 @@ export function Layout() {
 
   const navItems = [
     { path: "/", label: "儀表板", icon: LayoutDashboard },
-    { path: "/projects", label: "專案", icon: FolderKanban },
+    { path: "/help", label: "說明", icon: HelpCircle },
     { path: "/settings", label: "設定", icon: Settings },
   ];
 

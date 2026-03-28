@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import multer from "multer";
 import path from "path";
@@ -62,7 +62,7 @@ const upload = multer({
   },
 });
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data = registerSchema.parse(req.body);
 
@@ -116,7 +116,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data = loginSchema.parse(req.body);
 
@@ -155,7 +155,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -195,6 +195,12 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
 
     const data = updateProfileSchema.parse(req.body);
 
+    // Filter out undefined/null values for Prisma
+    const updateData: Record<string, unknown> = {};
+    if (data.username !== undefined && data.username !== null) updateData.username = data.username;
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.avatarUrl !== undefined && data.avatarUrl !== null && data.avatarUrl !== "") updateData.avatarUrl = data.avatarUrl;
+
     if (data.username) {
       const existingUsername = await prisma.user.findFirst({
         where: {
@@ -211,7 +217,7 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
 
     const user = await prisma.user.update({
       where: { id: req.user.userId },
-      data,
+      data: updateData,
       select: {
         id: true,
         email: true,

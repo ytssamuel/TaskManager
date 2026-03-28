@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import prisma from "@/utils/prisma";
 import { successResponse, errorResponse } from "@/utils/response";
@@ -19,7 +19,7 @@ const addMemberSchema = z.object({
   role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
 });
 
-export const getProjects = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getProjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -85,7 +85,7 @@ export const getProjects = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-export const getProject = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getProject = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -142,7 +142,7 @@ export const getProject = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-export const createProject = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createProject = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -193,7 +193,7 @@ export const createProject = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const updateProject = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateProject = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -252,7 +252,7 @@ export const updateProject = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const deleteProject = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteProject = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -284,7 +284,7 @@ export const deleteProject = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const addMember = async (req: AuthRequest, res: Response): Promise<void> => {
+export const addMember = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -354,7 +354,7 @@ export const addMember = async (req: AuthRequest, res: Response): Promise<void> 
   }
 };
 
-export const removeMember = async (req: AuthRequest, res: Response): Promise<void> => {
+export const removeMember = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));
@@ -410,7 +410,7 @@ export const removeMember = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-export const getMembers = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMembers = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json(errorResponse("AUTH_ERROR", "未登入"));

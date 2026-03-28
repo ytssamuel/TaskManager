@@ -1,0 +1,27 @@
+FROM node:20-alpine
+
+# Install Prisma dependencies
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Install specific Prisma version to avoid breaking changes
+RUN npm install -g prisma@5.22.0 @prisma/client@5.22.0
+
+# Copy from repo root context
+COPY backend/package*.json ./backend/
+COPY backend/prisma ./backend/prisma/
+
+WORKDIR /app/backend
+
+RUN npm install
+
+COPY backend/ .
+
+# Generate Prisma client
+RUN npx prisma@5.22.0 generate
+
+EXPOSE 3000
+
+# Run db push then start
+CMD sh -c "npx prisma@5.22.0 db push --skip-generate --accept-data-loss && npm run dev"

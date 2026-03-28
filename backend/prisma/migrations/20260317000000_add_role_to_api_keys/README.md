@@ -1,0 +1,1 @@
+Please edit this file with your correct database URL before running migrations!

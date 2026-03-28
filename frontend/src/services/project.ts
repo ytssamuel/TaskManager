@@ -2,6 +2,8 @@ import api from "@/lib/api";
 import type { ApiResponse, Project } from "@/lib/types";
 import type { ProjectInput } from "@/lib/validations";
 
+export type { Project };
+
 export const projectService = {
   async getProjects(): Promise<Project[]> {
     const response = await api.get<ApiResponse<Project[]>>("/projects");

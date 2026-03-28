@@ -1,16 +1,19 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import type { StringValue } from "ms";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-in-production";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as StringValue;
 
 export interface JWTPayload {
+  role?: string;
   userId: string;
   email: string;
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN };
+  return jwt.sign(payload, JWT_SECRET, options);
 }
 
 export function verifyToken(token: string): JWTPayload | null {
@@ -34,5 +37,5 @@ export function extractToken(authHeader: string | undefined): string | null {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
-  return authHeader.slice(7);
+  return authHeader.slice(7) || null;
 }

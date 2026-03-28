@@ -12,13 +12,13 @@ const renderWithRouter = (component: React.ReactNode) => {
 describe("Login Page", () => {
   it("renders login form elements", () => {
     renderWithRouter(<Login />);
-    expect(screen.getByLabelText("電子郵件")).toBeInTheDocument();
-    expect(screen.getByLabelText("密碼")).toBeInTheDocument();
+    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 
   it("has a register link", () => {
     renderWithRouter(<Login />);
-    const registerLink = screen.getByText("立即註冊");
+    const registerLink = screen.getByText(/register/i);
     expect(registerLink).toBeInTheDocument();
     expect(registerLink.closest("a")).toHaveAttribute("href", "/register");
   });
@@ -27,15 +27,17 @@ describe("Login Page", () => {
 describe("Register Page", () => {
   it("renders register form elements", () => {
     renderWithRouter(<Register />);
-    expect(screen.getByLabelText("名稱")).toBeInTheDocument();
-    expect(screen.getByLabelText("電子郵件")).toBeInTheDocument();
-    expect(screen.getByLabelText("密碼")).toBeInTheDocument();
-    expect(screen.getByLabelText("確認密碼")).toBeInTheDocument();
+    // Use getByPlaceholderText for more reliable matching
+    expect(screen.getByPlaceholderText("3-50 字元")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("顯示名稱")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("you@example.com")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("至少 8 個字元")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument();
   });
 
   it("has a login link", () => {
     renderWithRouter(<Register />);
-    const loginLink = screen.getByText("立即登入");
+    const loginLink = screen.getByText(/login/i);
     expect(loginLink).toBeInTheDocument();
     expect(loginLink.closest("a")).toHaveAttribute("href", "/login");
   });

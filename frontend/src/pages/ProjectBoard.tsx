@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InviteModal } from "@/components/InviteModal";
 import { TaskAssignees } from "@/components/TaskAssignees";
 import { TaskComments } from "@/components/TaskComments";
@@ -361,124 +362,259 @@ export function ProjectBoard() {
         setEditDialogOpen(open);
         if (!open) setSelectedTask(null);
       }}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-          <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
-            <DialogHeader>
-              <DialogTitle>編輯任務</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>任務標題</Label>
-                <Input {...editForm.register("title")} />
-                {editForm.formState.errors.title && (
-                  <p className="text-sm text-red-500">{editForm.formState.errors.title.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>描述（可選）</Label>
-                <Textarea {...editForm.register("description")} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>狀態</Label>
-                  <Select
-                    value={editForm.watch("status")}
-                    onValueChange={(v) => editForm.setValue("status", v as any)}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>優先級</Label>
-                  <Select
-                    value={editForm.watch("priority")}
-                    onValueChange={(v) => editForm.setValue("priority", v as any)}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PRIORITY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* 描述與留言切換 / View Mode Toggle */}
-            {selectedTask && (
-              <div className="border-t pt-4 mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={editViewMode === "stacked" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setEditViewMode("stacked")}
-                    className="h-8"
-                  >
-                    <Layout className="h-4 w-4 mr-1" />
-                    疊加
-                  </Button>
-                  <Button
-                    variant={editViewMode === "tabs" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setEditViewMode("tabs")}
-                    className="h-8"
-                  >
-                    <List className="h-4 w-4 mr-1" />
-                    分頁
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* 內容區域 - 根據 view mode 顯示 */}
-            {selectedTask && (
-              <div className="mt-4">
-                {/* 疊加模式 (預設) */}
-                {editViewMode === "stacked" && (
-                  <div className="space-y-4">
+        <DialogContent 
+          className={editViewMode === "tabs" 
+            ? "!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 !w-full !h-full !max-w-none !rounded-none !p-0 overflow-hidden" 
+            : "sm:max-w-md max-h-[85vh] overflow-y-auto"
+          }
+        >
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="flex flex-col h-full">
+            
+            {/* 疊加模式 (手機/小框) - 維持原樣 */}
+            {editViewMode === "stacked" && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>編輯任務</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>任務標題</Label>
+                    <Input {...editForm.register("title")} />
+                    {editForm.formState.errors.title && (
+                      <p className="text-sm text-red-500">{editForm.formState.errors.title.message}</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>描述</Label>
-                      <Textarea {...editForm.register("description")} placeholder="任務描述..." className="min-h-[80px]" />
+                      <Label>狀態</Label>
+                      <Select
+                        value={editForm.watch("status")}
+                        onValueChange={(v) => editForm.setValue("status", v as any)}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="border-t pt-4">
-                      <TaskComments taskId={selectedTask.id} />
+                    <div className="space-y-2">
+                      <Label>優先級</Label>
+                      <Select
+                        value={editForm.watch("priority")}
+                        onValueChange={(v) => editForm.setValue("priority", v as any)}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PRIORITY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* View Mode Toggle */}
+                {selectedTask && (
+                  <div className="border-t pt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={editViewMode === "stacked" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setEditViewMode("stacked")}
+                        className="h-8"
+                      >
+                        <Layout className="h-4 w-4 mr-1" />
+                        疊加
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditViewMode("tabs")}
+                        className="h-8"
+                      >
+                        <List className="h-4 w-4 mr-1" />
+                        分頁
+                      </Button>
                     </div>
                   </div>
                 )}
 
-                {/* 分頁模式 */}
-                {editViewMode === "tabs" && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>描述</Label>
-                      <Textarea {...editForm.register("description")} placeholder="任務描述..." className="min-h-[120px]" />
-                    </div>
-                    <div className="border-t pt-4">
-                      <TaskComments taskId={selectedTask.id} />
+                {/* 內容區域 */}
+                {selectedTask && (
+                  <div className="mt-4 mb-6 flex-1 overflow-y-auto">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>描述</Label>
+                        <Textarea 
+                          {...editForm.register("description")} 
+                          placeholder="任務描述..." 
+                          className="min-h-[100px]" 
+                        />
+                      </div>
+                      <div className="border-t pt-4">
+                        <TaskComments taskId={selectedTask.id} />
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
+
+                <DialogFooter className="flex-col sm:flex-row sm:justify-end gap-2 shrink-0">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setEditDialogOpen(false)} 
+                      className="w-full sm:w-auto"
+                    >
+                      取消
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={editForm.formState.isSubmitting} 
+                      className="w-full sm:w-auto"
+                    >
+                      {editForm.formState.isSubmitting ? "儲存中..." : "儲存"}
+                    </Button>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={() => selectedTask && handleDeleteTask(selectedTask.id)} 
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    刪除
+                  </Button>
+                </DialogFooter>
+              </>
             )}
 
-            <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between gap-2">
-              <Button type="button" variant="destructive" onClick={() => selectedTask && handleDeleteTask(selectedTask.id)} className="w-full sm:w-auto">
-                <Trash2 className="mr-2 h-4 w-4" />
-                刪除
-              </Button>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="w-full sm:w-auto">取消</Button>
-                <Button type="submit" disabled={editForm.formState.isSubmitting} className="w-full sm:w-auto">
-                  {editForm.formState.isSubmitting ? "儲存中..." : "儲存"}
-                </Button>
+            {/* 分頁模式 (桌面版全螢幕) - 左右分割佈局 */}
+            {editViewMode === "tabs" && selectedTask && (
+              <div className="flex flex-1 min-h-0">
+                
+                {/* 左側: 任務資訊 (固定寬度) */}
+                <div className="w-80 border-r p-4 flex flex-col shrink-0">
+                  <DialogTitle className="text-lg font-bold mb-4">編輯任務</DialogTitle>
+                  
+                  <div className="space-y-4 flex-1">
+                    {/* 標題 */}
+                    <div className="space-y-2">
+                      <Label>任務標題</Label>
+                      <Input {...editForm.register("title")} />
+                      {editForm.formState.errors.title && (
+                        <p className="text-sm text-red-500">{editForm.formState.errors.title.message}</p>
+                      )}
+                    </div>
+                    
+                    {/* 狀態 + 優先級 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>狀態</Label>
+                        <Select
+                          value={editForm.watch("status")}
+                          onValueChange={(v) => editForm.setValue("status", v as any)}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>優先級</Label>
+                        <Select
+                          value={editForm.watch("priority")}
+                          onValueChange={(v) => editForm.setValue("priority", v as any)}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {PRIORITY_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {/* 視圖切換 */}
+                    <div className="border-t pt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditViewMode("stacked")}
+                      >
+                        <Layout className="h-4 w-4 mr-1" />
+                        疊加
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setEditViewMode("tabs")}
+                      >
+                        <List className="h-4 w-4 mr-1" />
+                        分頁
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* 左側底部按鈕 */}
+                  <div className="border-t pt-4 mt-4 flex flex-col gap-2">
+                    <Button 
+                      type="submit" 
+                      disabled={editForm.formState.isSubmitting} 
+                      className="w-full"
+                    >
+                      {editForm.formState.isSubmitting ? "儲存中..." : "儲存"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setEditDialogOpen(false)} 
+                      className="w-full"
+                    >
+                      取消
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={() => handleDeleteTask(selectedTask.id)} 
+                      className="w-full"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      刪除
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* 右側: 描述/留言內容 (彈性寬度) */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <Tabs defaultValue="description" className="flex-1 flex flex-col h-full">
+                    <TabsList className="grid w-full grid-cols-2 shrink-0 border-b rounded-none">
+                      <TabsTrigger value="description">描述</TabsTrigger>
+                      <TabsTrigger value="comments">留言</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="description" className="flex-1 overflow-y-auto p-4">
+                      <Textarea 
+                        {...editForm.register("description")} 
+                        placeholder="任務描述..." 
+                        className="min-h-[400px] h-full resize-none" 
+                      />
+                    </TabsContent>
+                    <TabsContent value="comments" className="flex-1 overflow-y-auto p-4">
+                      <TaskComments taskId={selectedTask.id} />
+                    </TabsContent>
+                  </Tabs>
+                </div>
+                
               </div>
-            </DialogFooter>
+            )}
+            
           </form>
         </DialogContent>
       </Dialog>

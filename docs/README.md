@@ -29,6 +29,21 @@
 | [功能規格](develope/06-features.md) | 功能詳細規格 |
 | [部署指南](develope/07-deployment.md) | 部署方式與注意事項 |
 
+### 任務階層升級計畫 (v2.0)
+
+> 任務重組功能：父子任務、合併、拆分、轉為專案
+
+| 文檔 | 說明 |
+|------|------|
+| [實作總覽](develope/08-task-hierarchy-plan.md) | 計畫總覽與階段規劃 |
+| [資料庫模型](develope/09-database-model.md) | Schema 變更設計 |
+| [API 規格](develope/10-api-design.md) | 新 API 端點設計 |
+| [父子任務功能](develope/11-subtask-feature.md) | 父子任務功能詳細規格 |
+| [任務合併功能](develope/12-merge-feature.md) | 任務合併功能詳細規格 |
+| [任務拆分功能](develope/13-split-feature.md) | 任務拆分功能詳細規格 |
+| [轉為專案功能](develope/14-convert-project-feature.md) | 轉為專案功能詳細規格 |
+| [前端元件規劃](develope/15-frontend-components.md) | 前端元件架構與設計 |
+
 ---
 
 ## 🚀 快速連結
@@ -72,5 +87,13 @@ docs/
     ├── 01-project-overview.md
     ├── 02-tech-stack.md
     ├── 06-features.md
-    └── 07-deployment.md
+    ├── 07-deployment.md
+    ├── 08-task-hierarchy-plan.md    # 任務階層升級 - 總覽
+    ├── 09-database-model.md         # 任務階層升級 - 資料庫模型
+    ├── 10-api-design.md             # 任務階層升級 - API 設計
+    ├── 11-subtask-feature.md       # 任務階層升級 - 父子任務
+    ├── 12-merge-feature.md         # 任務階層升級 - 任務合併
+    ├── 13-split-feature.md         # 任務階層升級 - 任務拆分
+    ├── 14-convert-project-feature.md  # 任務階層升級 - 轉為專案
+    └── 15-frontend-components.md   # 任務階層升級 - 前端元件
 ```

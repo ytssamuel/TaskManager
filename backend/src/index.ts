@@ -128,7 +128,9 @@ app.get("/", (req, res) => {
 // 注意：更具體的路徑應該在前面定義
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
-// API Key 路由（需要在一般 task routes 之前）
+// Test routes 需要在 apiTaskRoutes 之前
+app.use("/api/test", testRoutes);
+// API Key 路由
 app.use("/api", apiTaskRoutes);  // API key 認證的 endpoints
 // Task 相關路由
 app.use("/api/tasks", taskRoutes);       // CRUD, status, order, dependencies
@@ -138,7 +140,6 @@ app.use("/api/columns", columnRoutes);
 app.use("/api/keys", apiKeyRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/invites", inviteRoutes);
-app.use("/api/test", testRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

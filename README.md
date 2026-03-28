@@ -1,4 +1,4 @@
-# 待辦事項管理系統 (Todo App)
+# 待辦事項管理系統 (TaskManager)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
@@ -7,20 +7,17 @@
 
 一個功能完整的全棧待辦事項管理網站，參照專案管理模式，支援任務狀態流轉、任務依賴關係、看板列順序鎖定等功能。
 
-> **最後更新**: 2026-02-02 | **版本**: v1.0.0
+> **最後更新**: 2026-03-28 | **版本**: v1.0.0
 
 ## 📋 目錄
 
 - [功能特色](#功能特色)
-- [最新更新](#最新更新)
 - [技術棧](#技術棧)
 - [專案結構](#專案結構)
 - [快速開始](#快速開始)
 - [環境變數](#環境變數)
-- [API 文件](#api-文件)
+- [文檔導覽](#文檔導覽)
 - [部署](#部署)
-- [開發日誌](#開發日誌)
-- [貢獻指南](#貢獻指南)
 - [授權](#授權)
 
 ---
@@ -31,42 +28,35 @@
 - [x] 使用者註冊與登入
 - [x] JWT 認證
 - [x] 個人資料管理
+- [x] 頭像上傳
 
 ### 專案功能
 - [x] 建立、編輯、刪除專案
-- [x] 專案成員管理
-- [x] 搜尋與篩選專案
+- [x] 專案成員管理 (OWNER/ADMIN/MEMBER)
+- [x] 成員邀請系統
 
 ### 任務功能
 - [x] 建立、編輯、刪除任務
 - [x] 任務狀態流轉（Backlog → Ready → In Progress → Review → Done）
 - [x] 任務優先級（低/中/高/緊急）
 - [x] 截止日期設定
-- [x] 任務指派
+- [x] 任務指派（多人）
+- [x] 任務依賴關係
+- [x] 任務留言
 - [x] 看板視圖（Kanban Board）
 - [x] 拖拽排序
 
+### 看板功能
+- [x] 看板列管理
+- [x] 列順序鎖定
+- [x] 列拖拽排序
+
 ### 進階功能
-- [x] 任務依賴關係
-- [x] 看板列順序鎖定
 - [x] 深色/淺色主題（支援系統跟隨）
 - [x] RWD 響應式設計（手機/平板/桌面）
-- [x] 個人設定頁面（頭像上傳、密碼修改）
-- [x] 自動化測試（Vitest）
-
----
-
-## 🆕 最新更新
-
-### v1.0.0 (2026-02-02)
-
-| 日期 | 更新內容 |
-|------|----------|
-| 2026-02-02 | 整理 SQL 遷移檔案結構 |
-| 2026-01-31 | 修復看板頁面 Bug、新增 RWD 響應式設計支援 |
-| 2026-01-30 | 新增個人設定頁面、頭像上傳功能 |
-| 2026-01-30 | 新增深色/淺色主題切換、前後端自動化測試 |
-| 2026-01-30 | 專案初始化，完成基礎架構建設 |
+- [x] API Key 管理
+- [x] 活動日誌
+- [x] 自動化測試（Vitest + Playwright）
 
 ---
 
@@ -85,8 +75,8 @@
 | React Hook Form 7+ | 表單處理 |
 | Zod | 資料驗證 |
 | Axios | HTTP 客戶端 |
-| Vitest | 單元/整合測試 |
-| @radix-ui/react-collapsible | 可折疊組件 |
+| @dnd-kit | 拖拽排序 |
+| Vitest + Playwright | 測試 |
 
 ### 後端
 | 技術 | 用途 |
@@ -99,6 +89,8 @@
 | JWT | 認證 |
 | bcrypt 5+ | 密碼加密 |
 | Multer | 檔案上傳 |
+| express-rate-limit | 請求限流 |
+| Helmet | 安全 Headers |
 | Vitest | 單元/整合測試 |
 
 ---
@@ -106,61 +98,45 @@
 ## 📁 專案結構
 
 ```
-todo-app/
+taskmanager/
 ├── frontend/                 # 前端專案
 │   ├── src/
-│   │   ├── __tests__/        # 前端測試
+│   │   ├── __tests__/       # 單元測試
 │   │   ├── components/       # React 組件
-│   │   │   ├── layout/       # 佈局組件 (Layout, Navbar)
-│   │   │   ├── providers/    # Context Providers (Theme)
-│   │   │   ├── ui/           # UI 基礎組件 (Button, Input, Dialog...)
-│   │   │   └── ThemeToggle.tsx  # 主題切換組件
-│   │   ├── hooks/            # 自定義 Hooks
-│   │   ├── lib/              # 工具庫
+│   │   │   ├── layout/       # 佈局組件
+│   │   │   ├── providers/    # Context Providers
+│   │   │   └── ui/           # UI 基礎組件
 │   │   ├── pages/            # 頁面
-│   │   │   ├── ApiTest.tsx   # API 測試頁
-│   │   │   ├── Dashboard.tsx # 儀表板
-│   │   │   ├── Login.tsx     # 登入頁
-│   │   │   ├── Profile.tsx   # 個人設定頁
-│   │   │   ├── ProjectBoard.tsx  # 看板頁
-│   │   │   ├── ProjectList.tsx   # 專案列表
-│   │   │   └── Register.tsx  # 註冊頁
 │   │   ├── services/         # API 服務
-│   │   ├── store/            # 狀態管理 (Zustand)
-│   │   │   ├── authStore.ts  # 認證狀態
-│   │   │   ├── projectStore.ts  # 專案狀態
-│   │   │   ├── taskStore.ts  # 任務狀態
-│   │   │   └── themeStore.ts # 主題狀態
-│   │   └── App.tsx
-│   └── vitest.config.ts      # 測試配置
+│   │   ├── store/            # Zustand 狀態管理
+│   │   └── hooks/            # 自定義 Hooks
+│   └── e2e/                  # E2E 測試
 │
 ├── backend/                  # 後端專案
 │   ├── src/
-│   │   ├── __tests__/        # 後端測試
+│   │   ├── __tests__/        # 測試
 │   │   ├── controllers/      # 控制器
 │   │   ├── middlewares/      # 中間件
 │   │   ├── routes/           # 路由
 │   │   ├── utils/            # 工具函數
-│   │   └── index.ts
-│   ├── prisma/
-│   │   ├── migrations/       # 資料庫遷移
-│   │   └── schema.prisma     # 資料庫 Schema
-│   ├── uploads/              # 上傳檔案目錄
-│   │   └── avatars/          # 用戶頭像
-│   └── vitest.config.ts      # 測試配置
+│   │   └── index.ts          # 入口檔案
+│   └── prisma/
+│       ├── migrations/       # 資料庫遷移
+│       └── schema.prisma     # 資料庫 Schema
 │
 ├── docs/                     # 文件
-│   ├── 01-project-overview.md
-│   ├── 02-tech-stack.md
-│   ├── 03-database-schema.md
-│   ├── 04-api-design.md
-│   ├── 05-frontend-architecture.md
-│   ├── 06-features.md
-│   ├── 07-deployment.md
-│   ├── 08-development-roadmap.md
-│   └── 09-changelog.md       # 開發日誌
+│   ├── api/                  # API 文檔
+│   │   └── 01-api-list.md    # API 清單
+│   ├── testing/              # 測試文檔
+│   │   └── 01-test-list.md   # 測試項目列表
+│   ├── user/                 # 用戶文檔
+│   │   └── 01-user-guide.md  # 使用手冊
+│   ├── develope/             # 開發文檔 (部分過時)
+│   └── old/                  # 過時文件 (建議清理)
 │
-└── README.md
+├── docker-compose.yml        # Docker 部署配置
+├── README.md
+└── LICENSE
 ```
 
 ---
@@ -178,42 +154,48 @@ todo-app/
 1. **Clone 專案**
 
 ```bash
-git clone https://github.com/yourusername/todo-app.git
-cd todo-app
+git clone https://github.com/mini-ytssamuel/TaskManager-dev.git
+cd TaskManager-dev
 ```
 
-2. **安裝前端依賴**
+2. **啟動 Docker 資料庫（可選）**
+
+```bash
+docker-compose up -d postgres
+```
+
+3. **安裝前端依賴**
 
 ```bash
 cd frontend
 npm install
 ```
 
-3. **安裝後端依賴**
+4. **安裝後端依賴**
 
 ```bash
 cd ../backend
 npm install
 ```
 
-4. **設定環境變數**
+5. **設定環境變數**
 
 ```bash
-# 前端
-cp ../frontend/.env.example ../frontend/.env
-
 # 後端
+cd backend
 cp .env.example .env
+# 編輯 .env 填入 DATABASE_URL 和 JWT_SECRET
 ```
 
-5. **初始化資料庫**
+6. **初始化資料庫**
 
 ```bash
+cd backend
 npx prisma migrate dev
 npx prisma generate
 ```
 
-6. **啟動開發伺服器**
+7. **啟動開發伺服器**
 
 ```bash
 # 終端機 1 - 前端
@@ -225,30 +207,24 @@ cd backend
 npm run dev
 ```
 
-7. **開啟瀏覽器**
+8. **開啟瀏覽器**
 
 - 前端：http://localhost:5173
 - 後端：http://localhost:3000
+- API 文件：http://localhost:3000/api/test
 
 ---
 
 ## 🔐 環境變數
 
-### 前端環境變數 (.env)
-
-```env
-VITE_API_URL=http://localhost:3000
-VITE_APP_NAME=待辦事項管理系統
-```
-
-### 後端環境變數 (.env)
+### 後端 (.env)
 
 ```env
 # 資料庫
-DATABASE_URL=postgresql://user:password@localhost:5432/todo_app
+DATABASE_URL=postgresql://user:password@localhost:5432/taskmanager
 
 # 認證
-JWT_SECRET=your-super-secret-key
+JWT_SECRET=your-super-secret-key-change-in-production
 JWT_EXPIRES_IN=7d
 
 # 伺服器
@@ -257,84 +233,60 @@ NODE_ENV=development
 
 # CORS
 CORS_ORIGIN=http://localhost:5173
+
+# Rate Limit
+RATE_LIMIT_MAX=1000
+```
+
+### 前端 (.env)
+
+```env
+VITE_API_URL=http://localhost:3000
+VITE_APP_NAME=待辦事項管理系統
 ```
 
 ---
 
-## 📚 API 文件
+## 📚 文檔導覽
 
-API 文件位於 [docs/04-api-design.md](docs/04-api-design.md)
-
-### 主要模組
-
-| 模組 | 端點前綴 | 描述 |
-|------|----------|------|
-| 認證 | `/api/auth` | 使用者註冊、登入 |
-| 專案 | `/api/projects` | 專案 CRUD、成員管理 |
-| 任務 | `/api/tasks` | 任務 CRUD、狀態更新 |
-| 看板列 | `/api/columns` | 看板列管理 |
+| 文檔 | 路徑 | 描述 |
+|------|------|------|
+| **API 清單** | [docs/api/01-api-list.md](docs/api/01-api-list.md) | 所有 API 端點詳細說明 |
+| **測試列表** | [docs/testing/01-test-list.md](docs/testing/01-test-list.md) | 現有測試項目總覽 |
+| **使用手冊** | [docs/user/01-user-guide.md](docs/user/01-user-guide.md) | 一般用戶操作指南 |
 
 ---
 
 ## ☁️ 部署
 
-### 前端部署 (Vercel)
+### Docker Compose (推薦)
 
+```bash
+docker-compose up -d
+```
+
+### 手動部署
+
+**前端 (Vercel)**
 1. 推送程式碼到 GitHub
 2. 在 Vercel 控制台導入倉庫
 3. 設定建構命令：`npm run build`
 4. 設定輸出目錄：`dist`
 5. 設定環境變數
-6. 部署
 
-### 後端部署 (Render)
-
+**後端 (Render)**
 1. 推送程式碼到 GitHub
 2. 在 Render 控制台創建 Web Service
 3. 連接 GitHub 倉庫
 4. 設定建構命令：`npm install && npm run build`
 5. 設定啟動命令：`npm start`
 6. 設定環境變數
-7. 部署
 
-### 資料庫 (Render PostgreSQL / Supabase)
-
+**資料庫 (Render PostgreSQL / Supabase)**
 1. 創建 PostgreSQL 資料庫
 2. 取得連接字串
 3. 設定 `DATABASE_URL` 環境變數
-4. 執行資料庫遷移
-
-詳細部署指南請參閱 [docs/07-deployment.md](docs/07-deployment.md)
-
----
-
-## 📝 開發日誌
-
-詳細開發日誌請參閱 [docs/09-changelog.md](docs/09-changelog.md)
-
-### 近期更新摘要
-
-- **2026-02-02**: 整理 SQL 遷移檔案結構
-- **2026-01-31**: 
-  - 修復看板頁面的 Bug
-  - 新增 RWD 響應式設計支援（手機、平板、桌面適配）
-  - 優化 ThemeToggle 組件
-- **2026-01-30**: 
-  - 新增個人設定頁面（Profile）
-  - 支援頭像上傳功能
-  - 新增深色/淺色主題切換
-  - 建立前後端自動化測試框架
-  - 專案初始化
-
----
-
-## 🤝 貢獻指南
-
-1. Fork 本專案
-2. 創建分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
+4. 執行 `npx prisma migrate deploy`
 
 ---
 
@@ -344,7 +296,21 @@ API 文件位於 [docs/04-api-design.md](docs/04-api-design.md)
 
 ---
 
-## 📞 聯繫
+## 🔧 開發命令
 
-- 專案維護者：[你的名稱]
-- 問題回報：[GitHub Issues](https://github.com/yourusername/todo-app/issues)
+```bash
+# 前端
+cd frontend
+npm run dev          # 開發模式
+npm run build        # 建構生產版本
+npm run test         # 執行單元測試
+npm run test:e2e     # 執行 E2E 測試
+
+# 後端
+cd backend
+npm run dev          # 開發模式
+npm run build        # 建構
+npm run start        # 生產模式
+npm run test         # 執行測試
+npx prisma studio    # 開啟資料庫管理介面
+```

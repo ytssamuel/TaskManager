@@ -1,5 +1,5 @@
 import jwt, { SignOptions } from "jsonwebtoken";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import type { StringValue } from "ms";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-in-production";

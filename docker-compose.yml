@@ -33,9 +33,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     command: sh -c "npx prisma migrate deploy && npm run dev"
 
   # Frontend
@@ -44,12 +41,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: taskmanager-frontend
-    network_mode: "host"
     environment:
-      VITE_API_URL: http://127.0.0.1:3000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
     command: sh -c "npm run dev -- --host 0.0.0.0"
     depends_on:
       - backend

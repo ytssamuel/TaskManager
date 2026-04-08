@@ -775,12 +775,14 @@ export function ProjectBoard() {
       />
 
       {/* 拆分任務對話框 */}
-      <SplitDialog
-        open={splitDialogOpen}
-        onOpenChange={setSplitDialogOpen}
-        task={selectedTask!}
-        onSplitComplete={handleSplitComplete}
-      />
+      {selectedTask && (
+        <SplitDialog
+          open={splitDialogOpen}
+          onOpenChange={setSplitDialogOpen}
+          task={selectedTask}
+          onSplitComplete={handleSplitComplete}
+        />
+      )}
 
       {/* 轉為專案對話框 */}
       <ConvertToProjectDialog
@@ -791,12 +793,14 @@ export function ProjectBoard() {
       />
 
       {/* 新增子任務對話框 */}
-      <AddSubtaskDialog
-        open={addSubtaskDialogOpen}
-        onOpenChange={setAddSubtaskDialogOpen}
-        parentTask={subtaskParentTask!}
-        onSubtaskCreated={handleSubtaskCreated}
-      />
+      {subtaskParentTask && (
+        <AddSubtaskDialog
+          open={addSubtaskDialogOpen}
+          onOpenChange={setAddSubtaskDialogOpen}
+          parentTask={subtaskParentTask}
+          onSubtaskCreated={handleSubtaskCreated}
+        />
+      )}
 
       {/* 多選工具列 */}
       <SelectionToolbar

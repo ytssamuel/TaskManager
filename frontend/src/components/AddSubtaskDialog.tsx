@@ -24,6 +24,10 @@ interface SubtaskFormData {
 }
 
 export function AddSubtaskDialog({ open, onOpenChange, parentTask, onSubtaskCreated }: AddSubtaskDialogProps) {
+  if (!parentTask) {
+    return null;
+  }
+
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<SubtaskFormData>({

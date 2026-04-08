@@ -23,10 +23,13 @@ interface SplitFormData {
 }
 
 export function SplitDialog({ open, onOpenChange, task, onSplitComplete }: SplitDialogProps) {
-  const [splits, setSplits] = useState<SplitItem[]>([
-    { title: `${task.title} (1/2)`, description: "", priority: task.priority },
-    { title: `${task.title} (2/2)`, description: "", priority: task.priority },
-  ]);
+  const [splits, setSplits] = useState<SplitItem[]>(() => {
+    if (!task) return [];
+    return [
+      { title: `${task.title} (1/2)`, description: "", priority: task.priority },
+      { title: `${task.title} (2/2)`, description: "", priority: task.priority },
+    ];
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<SplitFormData>({

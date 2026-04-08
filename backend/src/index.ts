@@ -18,6 +18,7 @@ import apiKeyRoutes from "@/routes/api-key.routes";
 import activityRoutes from "@/routes/activity.routes";
 import inviteRoutes from "@/routes/invite.routes";
 import apiTaskRoutes from "@/routes/api-task.routes";
+import taskHierarchyRoutes from "@/routes/task-hierarchy.routes";
 import { errorHandler } from "@/middlewares/error.middleware";
 import { notFoundHandler } from "@/middlewares/not-found.middleware";
 
@@ -136,6 +137,7 @@ app.use("/api", apiTaskRoutes);  // API key 認證的 endpoints
 app.use("/api/tasks", taskRoutes);       // CRUD, status, order, dependencies
 app.use("/api/tasks", taskAssigneeRoutes); // assignees
 app.use("/api/tasks", taskCommentRoutes);  // comments
+app.use("/api/tasks", taskHierarchyRoutes); // subtasks, merge, split, convert-to-project
 app.use("/api/columns", columnRoutes);
 app.use("/api/keys", apiKeyRoutes);
 app.use("/api/activities", activityRoutes);

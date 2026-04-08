@@ -48,6 +48,7 @@ export interface Task {
   priority: Priority;
   orderIndex: number;
   dueDate?: string;
+  parentTaskId?: string | null;
   assignee?: {
     id: string;
     name: string;
@@ -58,8 +59,54 @@ export interface Task {
     name: string;
   };
   dependencies: TaskDependency[];
+  assignees?: { id: string; name: string; avatarUrl?: string }[];
+  childCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  priority: Priority;
+  childCount: number;
+  assignee?: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface FieldConflict {
+  field: "title" | "description" | "priority" | "status" | "dueDate" | "assignees";
+  values: { taskId: string; value: any }[];
+  suggestedValue: any;
+}
+
+export interface MergePreview {
+  conflicts: FieldConflict[];
+  preview: {
+    title: string;
+    description?: string;
+    priority: Priority;
+    status: TaskStatus;
+    dueDate?: string;
+    assignees: { id: string; name: string; avatarUrl?: string }[];
+    dependencies: string[];
+  };
+}
+
+export interface SplitItem {
+  title: string;
+  description: string;
+  priority?: Priority;
+}
+
+export interface ConvertToProjectData {
+  projectName: string;
+  projectDescription?: string;
+  taskIds: string[];
 }
 
 export interface TaskDependency {

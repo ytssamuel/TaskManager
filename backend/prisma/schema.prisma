@@ -119,15 +119,22 @@ model Task {
   createdById String
   createdBy   User   @relation("Creator", fields: [createdById], references: [id])
 
+  parentTaskId String?
+  parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks     Task[]   @relation("TaskHierarchy")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  dependentOn TaskDependency[] @relation("DependentTask")
-  dependencies TaskDependency[] @relation("DependsOnTask")
+  dependentOn TaskDependency[]       @relation("DependentTask")
+  dependencies TaskDependency[]      @relation("DependsOnTask")
   activities Activity[]
   assignees   User[]   @relation("TaskAssignees")
   comments    TaskComment[]
 
+  @@index([projectId, status])
+  @@index([parentTaskId])
+  @@index([projectId, parentTaskId])
   @@map("tasks")
 }
 
@@ -218,4 +225,28 @@ model Activity {
   task   Task?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@map("activities")
+}
+
+model TaskOperationLog {
+  id          String   @id @default(uuid())
+  type        String
+  sourceIds   String[]
+  targetId    String?
+  metadata    Json?
+  performedBy String
+  createdAt   DateTime @default(now())
+
+  @@map("task_operation_logs")
+}
+
+model ExternalTaskDependency {
+  id              String  @id @default(uuid())
+  localTaskId     String
+  localProjectId  String
+  externalTaskId  String
+  externalProjectId String
+  createdAt       DateTime @default(now())
+
+  @@unique([localTaskId, externalTaskId])
+  @@map("external_task_dependencies")
 }

@@ -19,9 +19,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InviteModal } from "@/components/InviteModal";
 import { TaskAssignees } from "@/components/TaskAssignees";
 import { TaskComments } from "@/components/TaskComments";
+import { MergeDialog } from "@/components/MergeDialog";
+import { SplitDialog } from "@/components/SplitDialog";
+import { ConvertToProjectDialog } from "@/components/ConvertToProjectDialog";
+import { AddSubtaskDialog } from "@/components/AddSubtaskDialog";
+import { SelectionToolbar } from "@/components/SelectionToolbar";
+import { SubtaskList } from "@/components/SubtaskList";
 import { getPriorityColor, getPriorityLabel, getStatusLabel } from "@/lib/utils";
 import { taskSchema, type TaskInput } from "@/lib/validations";
-import { ArrowLeft, Plus, Lock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Trash2, Pencil, List, Layout } from "lucide-react";
+import { ArrowLeft, Plus, Lock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Trash2, Pencil, List, Layout, Check, GitBranch } from "lucide-react";
 import type { Task, Column } from "@/lib/types";
 
 interface ColumnWithStatus extends Column {
@@ -62,7 +68,7 @@ const getPrevStatus = (currentStatus: string): string | null => {
 export function ProjectBoard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { tasks, setTasks, columns, setColumns, addTask, updateTask, removeTask } = useTaskStore();
+  const { tasks, setTasks, columns, setColumns, addTask, addTasks, updateTask, removeTask, removeTasks } = useTaskStore();
   const { currentProject, setCurrentProject } = useProjectStore();
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -70,6 +76,17 @@ export function ProjectBoard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [expandedColumns, setExpandedColumns] = useState<string[]>(["BACKLOG", "IN_PROGRESS"]);
   const [editViewMode, setEditViewMode] = useState<"stacked" | "tabs">("stacked");
+
+  // Multi-select state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
+  // New operation dialogs
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [addSubtaskDialogOpen, setAddSubtaskDialogOpen] = useState(false);
+  const [subtaskParentTask, setSubtaskParentTask] = useState<Task | null>(null);
 
   const createForm = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
@@ -189,6 +206,75 @@ export function ProjectBoard() {
     }
   };
 
+  // Multi-select handlers
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      setSelectedTaskIds(new Set());
+    }
+  };
+
+  const toggleTaskSelection = (taskId: string) => {
+    const newSelected = new Set(selectedTaskIds);
+    if (newSelected.has(taskId)) {
+      newSelected.delete(taskId);
+    } else {
+      newSelected.add(taskId);
+    }
+    setSelectedTaskIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedTaskIds(new Set());
+  };
+
+  const handleMerge = () => {
+    if (selectedTaskIds.size < 2) {
+      toast({ title: "請選擇至少 2 個任務", variant: "destructive" });
+      return;
+    }
+    setMergeDialogOpen(true);
+  };
+
+  const handleConvertToProject = () => {
+    if (selectedTaskIds.size < 1) {
+      toast({ title: "請選擇至少 1 個任務", variant: "destructive" });
+      return;
+    }
+    setConvertDialogOpen(true);
+  };
+
+  const handleAddSubtask = (task: Task) => {
+    setSubtaskParentTask(task);
+    setAddSubtaskDialogOpen(true);
+  };
+
+  const handleMergeComplete = (mergedTask: Task) => {
+    removeTasks(Array.from(selectedTaskIds));
+    addTask(mergedTask);
+    clearSelection();
+  };
+
+  const handleSplitComplete = (newTasks: Task[]) => {
+    removeTask(selectedTask!.id);
+    addTasks(newTasks);
+    clearSelection();
+  };
+
+  const handleConvertComplete = () => {
+    clearSelection();
+    loadData();
+  };
+
+  const handleSubtaskCreated = (subtask: Task) => {
+    addTask(subtask);
+    loadData();
+  };
+
+  const getSelectedTasks = (): Task[] => {
+    return tasks.filter((t) => selectedTaskIds.has(t.id));
+  };
+
   const openEditDialog = (task: Task) => {
     setSelectedTask(task);
     editForm.reset({
@@ -223,27 +309,53 @@ export function ProjectBoard() {
   const TaskCard = ({ task, isMobile = false }: { task: Task; isMobile?: boolean }) => {
     const canMoveNext = getNextStatus(task.status) !== null;
     const canMovePrev = getPrevStatus(task.status) !== null;
+    const isSelected = selectedTaskIds.has(task.id);
+    const isRootTask = !task.parentTaskId;
 
-    // 手機版：上下箭頭（上 = 往前一個狀態，下 = 往後一個狀態）
-    // 桌面版：左右箭頭
     const PrevIcon = isMobile ? ChevronUp : ChevronLeft;
     const NextIcon = isMobile ? ChevronDown : ChevronRight;
 
+    const handleClick = () => {
+      if (isSelectionMode) {
+        toggleTaskSelection(task.id);
+      } else {
+        openEditDialog(task);
+      }
+    };
+
     return (
       <div
-        className="bg-card p-3 rounded-lg shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-        onClick={() => openEditDialog(task)}
+        className={`bg-card p-3 rounded-lg shadow-sm transition-all ${
+          isSelected ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-primary/50"
+        } ${!isRootTask ? "ml-4 border-l-2 border-muted-foreground/30" : ""}`}
+        onClick={handleClick}
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="font-medium text-sm line-clamp-2">{task.title}</p>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            {isSelectionMode && (
+              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center ${
+                isSelected ? "bg-primary border-primary" : "border-muted-foreground"
+              }`}>
+                {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm line-clamp-2">{task.title}</p>
+              {task.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
+              )}
+            </div>
+          </div>
         </div>
-        {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
-        )}
         <div className="flex items-center justify-between mt-2 gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</Badge>
-            {/* 顯示任務負責人 */}
+            {task.childCount !== undefined && task.childCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                <GitBranch className="h-3 w-3 mr-1" />
+                {task.childCount}
+              </Badge>
+            )}
             {currentProject?.members && (
               <TaskAssignees
                 taskId={task.id}
@@ -253,35 +365,45 @@ export function ProjectBoard() {
               />
             )}
           </div>
-          <div className={`flex items-center gap-0.5 ${isMobile ? "flex-col" : "flex-row"}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              disabled={!canMovePrev}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMoveTask(task, "prev");
-              }}
-              title="移到上一階段"
-            >
-              <PrevIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              disabled={!canMoveNext}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMoveTask(task, "next");
-              }}
-              title="移到下一階段"
-            >
-              <NextIcon className="h-4 w-4" />
-            </Button>
-          </div>
+          {!isSelectionMode && (
+            <div className={`flex items-center gap-0.5 ${isMobile ? "flex-col" : "flex-row"}`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={!canMovePrev}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMoveTask(task, "prev");
+                }}
+                title="移到上一階段"
+              >
+                <PrevIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={!canMoveNext}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMoveTask(task, "next");
+                }}
+                title="移到下一階段"
+              >
+                <NextIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
+        {!isSelectionMode && isRootTask && (
+          <div className="mt-2 pt-2 border-t">
+            <SubtaskList
+              taskId={task.id}
+              onAddSubtask={() => handleAddSubtask(task)}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -643,6 +765,48 @@ export function ProjectBoard() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* 合併任務對話框 */}
+      <MergeDialog
+        open={mergeDialogOpen}
+        onOpenChange={setMergeDialogOpen}
+        selectedTasks={getSelectedTasks()}
+        onMergeComplete={handleMergeComplete}
+      />
+
+      {/* 拆分任務對話框 */}
+      <SplitDialog
+        open={splitDialogOpen}
+        onOpenChange={setSplitDialogOpen}
+        task={selectedTask!}
+        onSplitComplete={handleSplitComplete}
+      />
+
+      {/* 轉為專案對話框 */}
+      <ConvertToProjectDialog
+        open={convertDialogOpen}
+        onOpenChange={setConvertDialogOpen}
+        selectedTasks={getSelectedTasks()}
+        onConvertComplete={handleConvertComplete}
+      />
+
+      {/* 新增子任務對話框 */}
+      <AddSubtaskDialog
+        open={addSubtaskDialogOpen}
+        onOpenChange={setAddSubtaskDialogOpen}
+        parentTask={subtaskParentTask!}
+        onSubtaskCreated={handleSubtaskCreated}
+      />
+
+      {/* 多選工具列 */}
+      <SelectionToolbar
+        selectedCount={selectedTaskIds.size}
+        isSelectionMode={isSelectionMode}
+        onMerge={handleMerge}
+        onConvertToProject={handleConvertToProject}
+        onClearSelection={clearSelection}
+        onToggleSelectionMode={toggleSelectionMode}
+      />
 
       {/* 桌面版：水平看板 */}
       <div className="hidden md:flex flex-1 gap-4 overflow-x-auto pb-4 min-h-0 scrollbar-thin">
